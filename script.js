@@ -24,7 +24,7 @@ const agents = [
         id: "summarizer",
         icon: "🔬",
         name: "Research Agent",
-        description: "교육공학 분야 논문을 탐색하고 핵심 기여, 한계, 후속 연구 아이디어를 요약하여 보고서를 작성합니다(옵시디언 연동)",
+        description: "교육공학 분야 논문을 탐색하고 핵심 기여, 한계, 후속 연구 아이디어를 요약하여 보고서를 작성합니다(옵시디언 연동).",
         status: "online",
         lastRunDate: "2026-02-28 11:34",
         recentKeyword: "prompt scaffolding",
