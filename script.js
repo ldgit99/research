@@ -1,4 +1,5 @@
 const MONITOR_SOURCE_URL = "./monitoring/research-agent-status.json";
+const IRB_MONITOR_SOURCE_URL = "./monitoring/irb-agent-status.json";
 const MONITOR_INTERVAL_MS = 60 * 1000;
 
 const agents = [
@@ -389,8 +390,39 @@ function applyMonitoringFailure() {
     ];
 }
 
+/* ── IRB 스냅샷 적용 ── */
+function applyIrbSnapshot(snapshot) {
+    const irbAgent = findAgent("irb");
+    if (!irbAgent) return;
+
+    const lastRunText    = formatDateTime(snapshot.lastRunAt);
+    const researchTopic  = snapshot.researchTopic || "-";
+    const qualityScore   = Number.isFinite(snapshot.qualityScore) ? `${snapshot.qualityScore}점` : "-";
+    const pipelineStatus = snapshot.pipelineStatus || "idle";
+
+    const statusMap2 = { idle: "online", running: "online", done: "online", failed: "degraded" };
+    irbAgent.status        = statusMap2[pipelineStatus] ?? "online";
+    irbAgent.lastRunDate   = lastRunText;
+    irbAgent.recentKeyword = researchTopic;
+    irbAgent.metrics = [
+        { label: "파이프라인", value: "8단계" },
+        { label: "산출 형식", value: "HWPX·MD·JSON" },
+        { label: "품질 점수", value: qualityScore },
+        { label: "실행 상태", value: pipelineStatus }
+    ];
+}
+
+function applyIrbFailure() {
+    const irbAgent = findAgent("irb");
+    if (!irbAgent) return;
+    irbAgent.status        = "degraded";
+    irbAgent.lastRunDate   = "-";
+    irbAgent.recentKeyword = "-";
+}
+
 /* ── 모니터링 사이클 ── */
 async function runMonitoringCycle() {
+    // Research Agent 상태
     try {
         const response = await fetch(`${MONITOR_SOURCE_URL}?t=${Date.now()}`, { cache: "no-store" });
         if (!response.ok) throw new Error("monitor source unavailable");
@@ -398,6 +430,16 @@ async function runMonitoringCycle() {
         applyResearchSnapshot(snapshot);
     } catch (_error) {
         applyMonitoringFailure();
+    }
+
+    // IRB Agent 상태
+    try {
+        const irbRes = await fetch(`${IRB_MONITOR_SOURCE_URL}?t=${Date.now()}`, { cache: "no-store" });
+        if (!irbRes.ok) throw new Error("irb source unavailable");
+        const irbSnapshot = await irbRes.json();
+        applyIrbSnapshot(irbSnapshot);
+    } catch (_error) {
+        applyIrbFailure();
     }
 
     renderDashboard();
