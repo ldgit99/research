@@ -3,7 +3,7 @@
         id: "collector",
         icon: "🗞️",
         name: "Daily Paper Digest",
-        description: "교육공학/AI 교육 트렌드 논문을 수집하고 중복을 제거해 일일 다이제스트를 생성합니다.",
+        description: "교육공학/AI 교육 트렌드 논문을 수집하고 중복을 제거해 일일 다이제스트를 생성합니다(이메일, 옵시디언 연동).",
         status: "online",
         lastRunDate: "2026-02-28 11:20",
         recentKeyword: "learning analytics",
