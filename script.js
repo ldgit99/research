@@ -60,168 +60,18 @@ const statusMap = {
     offline: { label: "Offline", className: "down" }
 };
 
-const authState = {
-    authenticated: false,
-    apiAvailable: true
-};
-
-const isGitHubPages = window.location.hostname.endsWith("github.io");
-
-const authStatusEl = document.querySelector("#authStatus");
-const authMessageEl = document.querySelector("#authMessage");
-const loginToggleBtn = document.querySelector("#loginToggleBtn");
-const logoutBtn = document.querySelector("#logoutBtn");
-const loginForm = document.querySelector("#loginForm");
-const loginSubmitBtn = document.querySelector("#loginSubmitBtn");
-const passwordInput = document.querySelector("#passwordInput");
-
-function setAuthMessage(message, type = "") {
-    authMessageEl.textContent = message || "";
-    authMessageEl.classList.remove("auth-message--error", "auth-message--success");
-
-    if (type === "error") {
-        authMessageEl.classList.add("auth-message--error");
-    }
-
-    if (type === "success") {
-        authMessageEl.classList.add("auth-message--success");
-    }
-}
-
-function renderAuthStatus() {
-    authStatusEl.classList.remove("auth-status--ok", "auth-status--warn");
-
-    if (!authState.apiAvailable) {
-        authStatusEl.textContent = isGitHubPages
-            ? "GitHub Pages 모드: 인증 서버 없음"
-            : "인증 서버 연결 실패";
-        authStatusEl.classList.add("auth-status--warn");
-        loginToggleBtn.hidden = isGitHubPages;
-        logoutBtn.hidden = true;
-        loginForm.hidden = true;
-        return;
-    }
-
-    if (authState.authenticated) {
-        authStatusEl.textContent = "연구 에이전트 인증됨";
-        authStatusEl.classList.add("auth-status--ok");
-        loginToggleBtn.hidden = true;
-        logoutBtn.hidden = false;
-        loginForm.hidden = true;
-    } else {
-        authStatusEl.textContent = "연구 에이전트 로그인 필요";
-        authStatusEl.classList.add("auth-status--warn");
-        loginToggleBtn.hidden = false;
-        logoutBtn.hidden = true;
-    }
-}
-
-function toggleLoginForm(forceOpen = false) {
-    const shouldShow = forceOpen || loginForm.hidden;
-    loginForm.hidden = !shouldShow;
-    if (shouldShow) {
-        passwordInput.focus();
-    }
-}
-
-async function refreshAuthStatus() {
-    if (isGitHubPages) {
-        authState.authenticated = false;
-        authState.apiAvailable = false;
-        renderAuthStatus();
-        return;
-    }
-
-    try {
-        const response = await fetch("/auth/status", {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error("status request failed");
-        }
-
-        const data = await response.json();
-        authState.authenticated = Boolean(data.authenticated);
-        authState.apiAvailable = true;
-    } catch (_error) {
-        authState.authenticated = false;
-        authState.apiAvailable = false;
-    }
-
-    renderAuthStatus();
-}
-
-async function login(password) {
-    loginSubmitBtn.disabled = true;
-    setAuthMessage("인증 중...");
-
-    try {
-        const response = await fetch("/auth/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            credentials: "include",
-            body: JSON.stringify({ password })
-        });
-
-        if (!response.ok) {
-            setAuthMessage("비밀번호가 올바르지 않습니다.", "error");
-            return;
-        }
-
-        authState.authenticated = true;
-        authState.apiAvailable = true;
-        renderAuthStatus();
-        loginForm.hidden = true;
-        passwordInput.value = "";
-        setAuthMessage("인증되었습니다.", "success");
-    } catch (_error) {
-        authState.apiAvailable = false;
-        renderAuthStatus();
-        setAuthMessage("인증 서버에 연결할 수 없습니다.", "error");
-    } finally {
-        loginSubmitBtn.disabled = false;
-    }
-}
-
-async function logout() {
-    try {
-        await fetch("/auth/logout", {
-            method: "POST",
-            credentials: "include"
-        });
-    } catch (_error) {
-        // ignore network errors and reset UI state
-    }
-
-    authState.authenticated = false;
-    renderAuthStatus();
-    setAuthMessage("로그아웃되었습니다.", "success");
-}
-
 function openAgent(agentId) {
     const agent = agents.find((item) => item.id === agentId);
     if (!agent) {
         return;
     }
 
-    if (agent.requiresAuth) {
-        if (!authState.apiAvailable) {
-            if (agent.launchPath) {
-                window.location.href = agent.launchPath;
-                return;
-            }
-        }
+    if (agent.launchPath) {
+        window.location.href = agent.launchPath;
+        return;
+    }
 
-        if (!authState.authenticated) {
-            toggleLoginForm(true);
-            setAuthMessage("Research Agent 이용을 위해 먼저 로그인하세요.", "error");
-            return;
-        }
-
+    if (agent.protectedPath) {
         window.location.href = agent.protectedPath;
         return;
     }
@@ -336,44 +186,5 @@ function renderSummary() {
     });
 }
 
-function bindAuthEvents() {
-    loginToggleBtn.addEventListener("click", () => {
-        toggleLoginForm();
-        setAuthMessage("");
-    });
-
-    logoutBtn.addEventListener("click", async () => {
-        await logout();
-    });
-
-    loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const password = passwordInput.value.trim();
-
-        if (!password) {
-            setAuthMessage("비밀번호를 입력하세요.", "error");
-            return;
-        }
-
-        await login(password);
-    });
-}
-
-function handleAuthRequiredHint() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("loginRequired") === "1") {
-        toggleLoginForm(true);
-        setAuthMessage("Research Agent 접근에는 인증이 필요합니다.", "error");
-
-        params.delete("loginRequired");
-        const nextQuery = params.toString();
-        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
-        window.history.replaceState({}, "", nextUrl);
-    }
-}
-
 renderSummary();
 agents.forEach((agent, index) => addAgentCard(agent, index));
-bindAuthEvents();
-handleAuthRequiredHint();
-refreshAuthStatus();
