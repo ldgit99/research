@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard</title>
+    <meta name="description" content="에이전트 상태를 한눈에 보는 운영 대시보드">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-orb bg-orb-left" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-right" aria-hidden="true"></div>
+
+    <header class="topbar">
+        <div class="topbar__inner">
+            <h1>DK의 연구 에이전트</h1>
+            <p>실행 상태와 최근 작업을 실시간으로 점검하세요.</p>
+            <div class="summary" id="summary" aria-live="polite"></div>
+        </div>
+    </header>
+
+    <main class="dashboard-wrap">
+        <section class="dashboard" id="dashboard" aria-label="에이전트 목록"></section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
