@@ -40,19 +40,21 @@ const agents = [
         ]
     },
     {
-        id: "publisher",
-        icon: "📤",
-        name: "Report Publisher",
-        description: "검수된 연구 요약을 팀 위키와 메신저 채널에 맞춰 발행하고 이력을 관리합니다.",
-        status: "degraded",
-        lastRunDate: "2026-02-28 10:58",
-        recentKeyword: "weekly brief",
-        keywords: ["Notion", "Slack", "Versioning"],
+        id: "irb",
+        icon: "📋",
+        name: "IRB Agent",
+        description: "GitHub Actions 기반으로 IRB 연구계획서를 자동 생성합니다. 8단계 파이프라인을 거쳐 HWPX·MD·JSON 형식으로 산출물을 저장합니다.",
+        status: "online",
+        lastRunDate: "-",
+        recentKeyword: "-",
+        keywords: ["IRB", "quality-score", "HWPX"],
+        launchPath: "https://ldgit99.github.io/irb-agent/",
+        buttonText: "열기",
         metrics: [
-            { label: "오늘 발행", value: "9건" },
-            { label: "예약 대기", value: "3건" },
-            { label: "실패 재시도", value: "1건" },
-            { label: "승인 필요", value: "2건" }
+            { label: "파이프라인", value: "8단계" },
+            { label: "산출 형식", value: "HWPX·MD·JSON" },
+            { label: "품질 기준", value: "80점 이상" },
+            { label: "실행 방식", value: "GitHub Actions" }
         ]
     },
     {
