@@ -1,5 +1,5 @@
 const MONITOR_SOURCE_URL = "./monitoring/research-agent-status.json";
-const IRB_MONITOR_SOURCE_URL = "./monitoring/irb-agent-status.json";
+const IRB_MONITOR_SOURCE_URL = "https://ldgit99.github.io/irb-agent/results/history.json";
 const MONITOR_INTERVAL_MS = 60 * 1000;
 
 const agents = [
@@ -391,24 +391,28 @@ function applyMonitoringFailure() {
 }
 
 /* ── IRB 스냅샷 적용 ── */
-function applyIrbSnapshot(snapshot) {
+function applyIrbSnapshot(historyArray) {
     const irbAgent = findAgent("irb");
     if (!irbAgent) return;
 
-    const lastRunText    = formatDateTime(snapshot.lastRunAt);
-    const researchTopic  = snapshot.researchTopic || "-";
-    const qualityScore   = Number.isFinite(snapshot.qualityScore) ? `${snapshot.qualityScore}점` : "-";
-    const pipelineStatus = snapshot.pipelineStatus || "idle";
+    // history.json은 배열 — 첫 번째 항목이 최신 실행
+    const latest = Array.isArray(historyArray) ? historyArray[0] : historyArray;
+    if (!latest) return;
 
-    const statusMap2 = { idle: "online", running: "online", done: "online", failed: "degraded" };
-    irbAgent.status        = statusMap2[pipelineStatus] ?? "online";
+    const lastRunText   = formatDateTime(latest.timestamp);
+    const topic         = latest.topic || "-";
+    const qualityTotal  = latest.quality?.total;
+    const qualityScore  = Number.isFinite(qualityTotal) ? `${qualityTotal}점` : "-";
+    const runNumber     = latest.run_number != null ? `#${latest.run_number}` : "-";
+
+    irbAgent.status        = "online";
     irbAgent.lastRunDate   = lastRunText;
-    irbAgent.recentKeyword = researchTopic;
+    irbAgent.recentKeyword = topic;
     irbAgent.metrics = [
-        { label: "파이프라인", value: "8단계" },
-        { label: "산출 형식", value: "HWPX·MD·JSON" },
-        { label: "품질 점수", value: qualityScore },
-        { label: "실행 상태", value: pipelineStatus }
+        { label: "최근 실행",   value: runNumber },
+        { label: "산출 형식",   value: "HWPX·MD·JSON" },
+        { label: "품질 점수",   value: qualityScore },
+        { label: "연구 주제",   value: topic }
     ];
 }
 
