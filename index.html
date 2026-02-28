@@ -18,6 +18,23 @@
         <div class="topbar__inner">
             <h1>DK의 연구 에이전트</h1>
             <p>실행 상태와 최근 작업을 실시간으로 점검하세요.</p>
+
+            <section class="auth-panel" aria-label="접근 인증">
+                <div class="auth-row">
+                    <span id="authStatus" class="auth-status">세션 확인 중...</span>
+                    <button id="loginToggleBtn" class="auth-btn" type="button">로그인</button>
+                    <button id="logoutBtn" class="auth-btn auth-btn--muted" type="button" hidden>로그아웃</button>
+                </div>
+                <form id="loginForm" class="auth-form" hidden>
+                    <label for="passwordInput">연구 에이전트 비밀번호</label>
+                    <div class="auth-input-wrap">
+                        <input id="passwordInput" name="password" type="password" autocomplete="current-password" required>
+                        <button id="loginSubmitBtn" type="submit" class="auth-btn">인증</button>
+                    </div>
+                </form>
+                <p id="authMessage" class="auth-message" aria-live="polite"></p>
+            </section>
+
             <div class="summary" id="summary" aria-live="polite"></div>
         </div>
     </header>
