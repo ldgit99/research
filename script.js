@@ -1,38 +1,54 @@
 ﻿const agents = [
     {
         id: "collector",
+        icon: "🗞️",
         name: "Daily Paper Digest",
-        description: "외부 피드 수집과 중복 제거를 담당합니다.",
+        description: "교육공학/AI 교육 트렌드 논문을 수집하고 중복을 제거해 일일 다이제스트를 생성합니다.",
         status: "online",
-        lastRun: "2분 전",
-        successRate: 98,
-        queue: 3
+        lastRunDate: "2026-02-28 11:20",
+        recentKeyword: "learning analytics",
+        keywords: ["MOOC", "assessment", "personalization"],
+        metrics: [
+            { label: "오늘 수집", value: "42편" },
+            { label: "중복 제거", value: "11편" },
+            { label: "요약 완료", value: "31편" },
+            { label: "업데이트", value: "15분 주기" }
+        ]
     },
     {
         id: "summarizer",
+        icon: "🔬",
         name: "Research Agent",
-        description: "arXiv/웹 논문을 탐색하고 핵심 기여, 한계, 후속 연구 아이디어를 요약합니다.",
+        description: "교육공학 분야 논문을 탐색하고 핵심 기여, 한계, 후속 연구 아이디어를 요약하여 보고서를 작성합니다(옵시디언 연동)",
         status: "online",
-        lastRun: "방금 전",
-        successRate: 96,
-        queue: 4,
+        lastRunDate: "2026-02-28 11:34",
+        recentKeyword: "prompt scaffolding",
+        keywords: ["CSCL", "RAG", "feedback loop"],
         launchPath: "https://research-agent-ldgit99.streamlit.app/",
-        buttonText: "연구 열기",
+        buttonText: "열기",
+        highlight: true,
         metrics: [
+            { label: "최근 실행", value: "2026-02-28" },
             { label: "오늘 분석", value: "18편" },
-            { label: "핵심 분야", value: "LLM Eval" },
-            { label: "최근 키워드", value: "RAG" },
-            { label: "업데이트", value: "실시간" }
+            { label: "보고서 초안", value: "6건" },
+            { label: "동기화", value: "Obsidian" }
         ]
     },
     {
         id: "publisher",
+        icon: "📤",
         name: "Report Publisher",
-        description: "검수된 리포트를 사내 채널로 배포합니다.",
-        status: "offline",
-        lastRun: "1시간 전",
-        successRate: 0,
-        queue: 0
+        description: "검수된 연구 요약을 팀 위키와 메신저 채널에 맞춰 발행하고 이력을 관리합니다.",
+        status: "degraded",
+        lastRunDate: "2026-02-28 10:58",
+        recentKeyword: "weekly brief",
+        keywords: ["Notion", "Slack", "Versioning"],
+        metrics: [
+            { label: "오늘 발행", value: "9건" },
+            { label: "예약 대기", value: "3건" },
+            { label: "실패 재시도", value: "1건" },
+            { label: "승인 필요", value: "2건" }
+        ]
     }
 ];
 
@@ -68,44 +84,64 @@ function createMetric(labelText, valueText) {
     return wrap;
 }
 
-function getAgentMetrics(agent) {
-    if (Array.isArray(agent.metrics) && agent.metrics.length > 0) {
-        return agent.metrics;
-    }
-
-    return [
-        { label: "최근 실행", value: agent.lastRun },
-        { label: "성공률", value: `${agent.successRate}%` },
-        { label: "대기 작업", value: `${agent.queue}건` },
-        { label: "ID", value: agent.id }
-    ];
-}
-
 function addAgentCard(agent, index) {
     const dashboard = document.querySelector("#dashboard");
     const card = document.createElement("section");
     card.className = "agent-card";
+    if (agent.highlight) {
+        card.classList.add("agent-card--research");
+    }
     card.style.animationDelay = `${index * 80}ms`;
 
     const head = document.createElement("div");
     head.className = "agent-card__head";
 
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "agent-title";
+
+    const icon = document.createElement("span");
+    icon.className = "agent-icon";
+    icon.textContent = agent.icon || "🤖";
+
     const title = document.createElement("h2");
     title.textContent = agent.name;
+
+    titleWrap.append(icon, title);
 
     const badge = document.createElement("span");
     const state = statusMap[agent.status] || statusMap.offline;
     badge.className = `badge ${state.className}`;
     badge.textContent = state.label;
 
-    head.append(title, badge);
+    head.append(titleWrap, badge);
 
     const desc = document.createElement("p");
     desc.textContent = agent.description;
 
+    const meta = document.createElement("div");
+    meta.className = "agent-meta";
+    [
+        `최근 실행: ${agent.lastRunDate || "-"}`,
+        `최근 검색: ${agent.recentKeyword || "-"}`
+    ].forEach((text) => {
+        const chip = document.createElement("span");
+        chip.className = "meta-chip";
+        chip.textContent = text;
+        meta.appendChild(chip);
+    });
+
+    const keywordRow = document.createElement("div");
+    keywordRow.className = "keyword-row";
+    (agent.keywords || []).forEach((keywordText) => {
+        const keyword = document.createElement("span");
+        keyword.className = "keyword";
+        keyword.textContent = `#${keywordText}`;
+        keywordRow.appendChild(keyword);
+    });
+
     const metrics = document.createElement("div");
     metrics.className = "metrics";
-    getAgentMetrics(agent).forEach((metric) => {
+    (agent.metrics || []).forEach((metric) => {
         metrics.append(createMetric(metric.label, metric.value));
     });
 
@@ -114,7 +150,7 @@ function addAgentCard(agent, index) {
     button.textContent = agent.buttonText || "열기";
     button.addEventListener("click", () => openAgent(agent.id));
 
-    card.append(head, desc, metrics, button);
+    card.append(head, desc, meta, keywordRow, metrics, button);
     dashboard.appendChild(card);
 }
 
