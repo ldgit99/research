@@ -404,6 +404,7 @@ function applyIrbSnapshot(historyArray) {
     const qualityTotal  = latest.quality?.total;
     const qualityScore  = Number.isFinite(qualityTotal) ? `${qualityTotal}점` : "-";
     const runNumber     = latest.run_number != null ? `#${latest.run_number}` : "-";
+    const result        = (latest.files?.hwpx && Number.isFinite(qualityTotal)) ? "성공" : "실패";
 
     irbAgent.status        = "online";
     irbAgent.lastRunDate   = lastRunText;
@@ -412,7 +413,7 @@ function applyIrbSnapshot(historyArray) {
         { label: "최근 실행",   value: runNumber },
         { label: "산출 형식",   value: "HWPX·MD·JSON" },
         { label: "품질 점수",   value: qualityScore },
-        { label: "연구 주제",   value: topic }
+        { label: "결과",        value: result }
     ];
 }
 
