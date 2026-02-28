@@ -1,4 +1,7 @@
-﻿const agents = [
+﻿const MONITOR_SOURCE_URL = "./monitoring/research-agent-status.json";
+const MONITOR_INTERVAL_MS = 60 * 1000;
+
+const agents = [
     {
         id: "collector",
         icon: "🗞️",
@@ -25,14 +28,12 @@
         recentKeyword: "prompt scaffolding",
         keywords: ["CSCL", "RAG", "feedback loop"],
         launchPath: "https://research-agent-ldgit99.streamlit.app/",
-        protectedPath: "/go/research",
-        requiresAuth: true,
         buttonText: "열기",
         highlight: true,
         metrics: [
-            { label: "최근 실행", value: "2026-02-28" },
+            { label: "최근 실행", value: "2026-02-28 11:34" },
             { label: "오늘 분석", value: "18편" },
-            { label: "보고서 초안", value: "6건" },
+            { label: "일일 보고서", value: "6건" },
             { label: "동기화", value: "Obsidian" }
         ]
     },
@@ -51,6 +52,23 @@
             { label: "실패 재시도", value: "1건" },
             { label: "승인 필요", value: "2건" }
         ]
+    },
+    {
+        id: "monitor",
+        icon: "🛰️",
+        name: "Monitoring Agent",
+        description: "Research Agent 상태를 점검하고 핵심 운영 지표를 대시보드에 반영합니다.",
+        status: "online",
+        lastRunDate: "-",
+        recentKeyword: "-",
+        keywords: ["health-check", "telemetry", "dashboard"],
+        buttonText: "새로고침",
+        metrics: [
+            { label: "최근 점검", value: "-" },
+            { label: "데이터 지연", value: "-" },
+            { label: "점검 항목", value: "5개" },
+            { label: "동기화 상태", value: "대기" }
+        ]
     }
 ];
 
@@ -60,19 +78,48 @@ const statusMap = {
     offline: { label: "Offline", className: "down" }
 };
 
+const monitorState = {
+    lastCheckedAt: "-",
+    delayText: "-",
+    syncStatus: "대기"
+};
+
+function formatDateTime(input) {
+    if (!input) {
+        return "-";
+    }
+
+    const date = new Date(input);
+    if (Number.isNaN(date.getTime())) {
+        return "-";
+    }
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mi = String(date.getMinutes()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+}
+
+function findAgent(id) {
+    return agents.find((agent) => agent.id === id);
+}
+
 function openAgent(agentId) {
-    const agent = agents.find((item) => item.id === agentId);
+    if (agentId === "monitor") {
+        runMonitoringCycle();
+        return;
+    }
+
+    const agent = findAgent(agentId);
     if (!agent) {
         return;
     }
 
     if (agent.launchPath) {
         window.location.href = agent.launchPath;
-        return;
-    }
-
-    if (agent.protectedPath) {
-        window.location.href = agent.protectedPath;
         return;
     }
 
@@ -167,6 +214,8 @@ function addAgentCard(agent, index) {
 
 function renderSummary() {
     const summary = document.querySelector("#summary");
+    summary.innerHTML = "";
+
     const onlineCount = agents.filter((agent) => agent.status === "online").length;
     const degradedCount = agents.filter((agent) => agent.status === "degraded").length;
     const offlineCount = agents.filter((agent) => agent.status === "offline").length;
@@ -186,5 +235,114 @@ function renderSummary() {
     });
 }
 
-renderSummary();
-agents.forEach((agent, index) => addAgentCard(agent, index));
+function renderDashboard() {
+    const dashboard = document.querySelector("#dashboard");
+    dashboard.innerHTML = "";
+
+    agents.forEach((agent, index) => addAgentCard(agent, index));
+    renderSummary();
+}
+
+function getDelayMinutes(updatedAt) {
+    const target = new Date(updatedAt);
+    if (Number.isNaN(target.getTime())) {
+        return null;
+    }
+
+    return Math.max(0, Math.floor((Date.now() - target.getTime()) / 60000));
+}
+
+function applyResearchSnapshot(snapshot) {
+    const researchAgent = findAgent("summarizer");
+    const monitoringAgent = findAgent("monitor");
+
+    if (!researchAgent || !monitoringAgent) {
+        return;
+    }
+
+    const delayMinutes = getDelayMinutes(snapshot.updatedAt);
+    let monitorStatus = "online";
+    let delayText = "-";
+
+    if (delayMinutes === null) {
+        monitorStatus = "degraded";
+        delayText = "알 수 없음";
+    } else {
+        delayText = `${delayMinutes}분`;
+        if (delayMinutes > 30) {
+            monitorStatus = "offline";
+        } else if (delayMinutes > 10) {
+            monitorStatus = "degraded";
+        }
+    }
+
+    const lastRunText = formatDateTime(snapshot.lastRunAt);
+    const keywordText = snapshot.recentKeyword || "-";
+    const todayAnalyzed = Number.isFinite(snapshot.todayAnalyzed) ? `${snapshot.todayAnalyzed}편` : "-";
+    const dailyReports = Number.isFinite(snapshot.dailyReports) ? `${snapshot.dailyReports}건` : "-";
+    const syncText = snapshot.syncTarget ? `${snapshot.syncTarget} (${snapshot.syncStatus || "상태 미확인"})` : "-";
+
+    researchAgent.lastRunDate = lastRunText;
+    researchAgent.recentKeyword = keywordText;
+    researchAgent.keywords = Array.isArray(snapshot.keywords) && snapshot.keywords.length > 0
+        ? snapshot.keywords
+        : researchAgent.keywords;
+    researchAgent.status = monitorStatus === "offline" ? "degraded" : "online";
+    researchAgent.metrics = [
+        { label: "최근 실행", value: lastRunText },
+        { label: "오늘 분석", value: todayAnalyzed },
+        { label: "일일 보고서", value: dailyReports },
+        { label: "동기화", value: syncText }
+    ];
+
+    monitorState.lastCheckedAt = formatDateTime(snapshot.updatedAt);
+    monitorState.delayText = delayText;
+    monitorState.syncStatus = snapshot.syncStatus || "상태 미확인";
+
+    monitoringAgent.status = monitorStatus;
+    monitoringAgent.lastRunDate = monitorState.lastCheckedAt;
+    monitoringAgent.recentKeyword = keywordText;
+    monitoringAgent.metrics = [
+        { label: "최근 점검", value: monitorState.lastCheckedAt },
+        { label: "데이터 지연", value: monitorState.delayText },
+        { label: "점검 항목", value: "5개" },
+        { label: "동기화 상태", value: monitorState.syncStatus }
+    ];
+}
+
+function applyMonitoringFailure() {
+    const monitoringAgent = findAgent("monitor");
+    if (!monitoringAgent) {
+        return;
+    }
+
+    monitoringAgent.status = "offline";
+    monitoringAgent.lastRunDate = formatDateTime(new Date().toISOString());
+    monitoringAgent.recentKeyword = "데이터 수집 실패";
+    monitoringAgent.metrics = [
+        { label: "최근 점검", value: monitoringAgent.lastRunDate },
+        { label: "데이터 지연", value: "수집 실패" },
+        { label: "점검 항목", value: "5개" },
+        { label: "동기화 상태", value: "확인 불가" }
+    ];
+}
+
+async function runMonitoringCycle() {
+    try {
+        const response = await fetch(`${MONITOR_SOURCE_URL}?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) {
+            throw new Error("monitor source unavailable");
+        }
+
+        const snapshot = await response.json();
+        applyResearchSnapshot(snapshot);
+    } catch (_error) {
+        applyMonitoringFailure();
+    }
+
+    renderDashboard();
+}
+
+renderDashboard();
+runMonitoringCycle();
+setInterval(runMonitoringCycle, MONITOR_INTERVAL_MS);
