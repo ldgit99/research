@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     --bg: #f2f6f5;
     --panel: #ffffff;
     --text: #112227;
@@ -66,6 +66,19 @@ body {
     margin: 0 auto;
 }
 
+/* ── 헤더 타이틀 행 ── */
+.topbar__title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.topbar__heading {
+    min-width: 0;
+}
+
 .topbar h1 {
     margin: 0;
     font-family: "Space Grotesk", "Noto Sans KR", sans-serif;
@@ -74,10 +87,71 @@ body {
 }
 
 .topbar p {
-    margin: 0.7rem 0 1.2rem;
+    margin: 0.55rem 0 0;
     color: var(--muted);
 }
 
+/* ── 헤더 액션 영역 ── */
+.topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+    padding-top: 0.25rem;
+}
+
+.last-updated {
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.38rem;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 0.42rem 0.78rem;
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--text);
+    font-size: 0.84rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.refresh-btn:hover {
+    background: #fff;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.refresh-btn:active {
+    transform: translateY(1px);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.refresh-btn svg {
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.refresh-btn.spinning svg {
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Auth panel ── */
 .auth-panel {
     border: 1px solid #cde2dd;
     background: rgba(255, 255, 255, 0.88);
@@ -169,7 +243,8 @@ body {
 
 .auth-input-wrap input:focus-visible,
 .auth-btn:focus-visible,
-.agent-card button:focus-visible {
+.agent-card button:focus-visible,
+.refresh-btn:focus-visible {
     outline: 3px solid rgba(11, 143, 122, 0.35);
     outline-offset: 2px;
 }
@@ -189,6 +264,7 @@ body {
     color: #1e7a45;
 }
 
+/* ── Summary pills ── */
 .summary {
     display: flex;
     flex-wrap: wrap;
@@ -204,6 +280,28 @@ body {
     color: var(--muted);
 }
 
+.pill--ok {
+    background: #e7f8ee;
+    border-color: #b8e4c7;
+    color: #1d6e3e;
+    font-weight: 600;
+}
+
+.pill--warn {
+    background: #fff5e8;
+    border-color: #f2d7b2;
+    color: #8b5e1a;
+    font-weight: 600;
+}
+
+.pill--down {
+    background: #fdecea;
+    border-color: #f5c2bb;
+    color: #8b2020;
+    font-weight: 600;
+}
+
+/* ── Dashboard grid ── */
 .dashboard-wrap {
     max-width: 1200px;
     margin: 0 auto;
@@ -216,6 +314,7 @@ body {
     gap: 1rem;
 }
 
+/* ── Agent cards ── */
 .agent-card {
     background: var(--panel);
     border: 1px solid var(--line);
@@ -228,11 +327,54 @@ body {
     transform: translateY(10px);
     opacity: 0;
     animation: rise 0.42s ease forwards;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
+/* 좌측 상태 바 */
+.agent-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--status-color, transparent);
+    pointer-events: none;
+}
+
+/* 카드 hover */
+.agent-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px rgba(12, 47, 56, 0.18);
+}
+
+/* 상태별 색상 */
+.agent-card--online  { --status-color: var(--ok); }
+.agent-card--degraded {
+    --status-color: var(--warn);
+    background: linear-gradient(180deg, #fffdf5 0%, #fffbee 100%);
+}
+.agent-card--offline {
+    --status-color: var(--down);
+    background: linear-gradient(180deg, #fff8f8 0%, #fff3f3 100%);
+}
+
+/* Research 강조 카드 */
 .agent-card--research {
     border: 1px solid #8dd0c6;
     background: linear-gradient(180deg, #ffffff 0%, #f7fcfb 100%);
+}
+
+.agent-card--research.agent-card--degraded {
+    background: linear-gradient(180deg, #fffdf5 0%, #fffbee 100%);
+    border-color: #dfc070;
+}
+
+.agent-card--research.agent-card--offline {
+    background: linear-gradient(180deg, #fff8f8 0%, #fff3f3 100%);
+    border-color: #e0a0a0;
 }
 
 .agent-card__head {
@@ -258,6 +400,7 @@ body {
     justify-content: center;
     background: #e8f5f2;
     font-size: 1rem;
+    flex-shrink: 0;
 }
 
 .agent-card h2 {
@@ -267,24 +410,38 @@ body {
     letter-spacing: -0.01em;
 }
 
+/* ── 상태 뱃지 ── */
 .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     padding: 0.24rem 0.55rem;
     border-radius: 999px;
     font-size: 0.77rem;
     font-weight: 600;
     color: #fff;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.badge.ok {
-    background: var(--ok);
+.badge.ok   { background: var(--ok); }
+.badge.warn { background: var(--warn); }
+.badge.down { background: var(--down); }
+
+/* Online 펄스 점 */
+.badge.ok::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    animation: pulse-dot 1.8s ease-in-out infinite;
+    flex-shrink: 0;
 }
 
-.badge.warn {
-    background: var(--warn);
-}
-
-.badge.down {
-    background: var(--down);
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.45; transform: scale(0.7); }
 }
 
 .agent-card p {
@@ -323,6 +480,7 @@ body {
     padding: 0.24rem 0.55rem;
 }
 
+/* ── 메트릭 그리드 ── */
 .metrics {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -344,11 +502,12 @@ body {
 
 .metric .value {
     display: block;
-    margin-top: 0.25rem;
+    margin-top: 0.3rem;
     font-weight: 700;
-    font-size: 0.96rem;
+    font-size: 1.05rem;
 }
 
+/* ── 카드 버튼 ── */
 .agent-card button {
     border: none;
     border-radius: 10px;
@@ -356,6 +515,7 @@ body {
     background: var(--accent);
     color: #fff;
     font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.15s ease;
 }
@@ -368,6 +528,53 @@ body {
     transform: translateY(1px);
 }
 
+/* ── 스켈레톤 로딩 ── */
+.skeleton-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    transform: translateY(10px);
+    opacity: 0;
+    animation: rise 0.42s ease forwards;
+    overflow: hidden;
+}
+
+.skeleton-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+}
+
+.skeleton-line {
+    border-radius: 6px;
+    background: linear-gradient(90deg, #eef2f0 25%, #dde8e4 50%, #eef2f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-meta {
+    display: flex;
+    gap: 0.45rem;
+}
+
+.skeleton-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+}
+
+/* ── 공통 애니메이션 ── */
 @keyframes rise {
     to {
         transform: translateY(0);
@@ -375,9 +582,124 @@ body {
     }
 }
 
+/* ── 다크 모드 ── */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f1a1d;
+        --panel: #182428;
+        --text: #dff0ec;
+        --muted: #7a9fa0;
+        --line: #263b3f;
+        --accent: #1abfa6;
+        --accent-strong: #15a692;
+        --ok: #1aad5f;
+        --warn: #e68a00;
+        --down: #d44040;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    body {
+        background: radial-gradient(circle at 10% 10%, #0d2820 0%, transparent 32%),
+            radial-gradient(circle at 90% 15%, #241a08 0%, transparent 28%),
+            var(--bg);
+    }
+
+    .bg-orb-left  { background: #0e4c3e; }
+    .bg-orb-right { background: #4a3012; }
+
+    .refresh-btn {
+        background: rgba(24, 36, 40, 0.85);
+        border-color: var(--line);
+        color: var(--text);
+    }
+
+    .refresh-btn:hover {
+        background: #1e3035;
+        border-color: var(--accent);
+    }
+
+    .pill { background: rgba(24, 36, 40, 0.85); }
+
+    .pill--ok   { background: #0f2e1e; border-color: #1a5c38; color: #4ed48a; }
+    .pill--warn { background: #2a1e08; border-color: #6b4800; color: #f0a830; }
+    .pill--down { background: #2a0d0d; border-color: #6b1f1f; color: #f07070; }
+
+    .meta-chip {
+        background: #1e3035;
+        border-color: #2e4a50;
+        color: #a0c8cc;
+    }
+
+    .keyword {
+        background: #1a2050;
+        border-color: #2a3070;
+        color: #8090e0;
+    }
+
+    .metric {
+        background: #1e2e32;
+        border-color: var(--line);
+    }
+
+    .agent-card--research {
+        background: linear-gradient(180deg, #182428 0%, #162022 100%);
+        border-color: #2a5050;
+    }
+
+    .agent-card--degraded {
+        background: linear-gradient(180deg, #1f1a0a 0%, #1a1508 100%);
+    }
+
+    .agent-card--offline {
+        background: linear-gradient(180deg, #1f0a0a 0%, #1a0808 100%);
+    }
+
+    .agent-card--research.agent-card--degraded {
+        background: linear-gradient(180deg, #1f1a0a 0%, #1a1508 100%);
+        border-color: #6b4800;
+    }
+
+    .agent-card--research.agent-card--offline {
+        background: linear-gradient(180deg, #1f0a0a 0%, #1a0808 100%);
+        border-color: #6b1f1f;
+    }
+
+    .skeleton-line {
+        background: linear-gradient(90deg, #1e2e32 25%, #263a3e 50%, #1e2e32 75%);
+        background-size: 200% 100%;
+    }
+
+    .auth-panel {
+        background: rgba(24, 36, 40, 0.88);
+        border-color: #2a4a44;
+    }
+
+    .auth-status {
+        background: #1a2a2e;
+        border-color: #2a3e44;
+        color: #a0b8bc;
+    }
+
+    .auth-input-wrap input {
+        background: #1a2a2e;
+        border-color: #2a3e44;
+        color: var(--text);
+    }
+}
+
+/* ── 반응형 ── */
 @media (max-width: 680px) {
     .dashboard {
         grid-template-columns: 1fr;
+    }
+
+    .topbar__title-row {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .topbar__actions {
+        padding-top: 0;
     }
 
     .auth-input-wrap {

@@ -1,4 +1,4 @@
-﻿const MONITOR_SOURCE_URL = "./monitoring/research-agent-status.json";
+const MONITOR_SOURCE_URL = "./monitoring/research-agent-status.json";
 const MONITOR_INTERVAL_MS = 60 * 1000;
 
 const agents = [
@@ -11,6 +11,8 @@ const agents = [
         lastRunDate: "2026-02-28 11:20",
         recentKeyword: "learning analytics",
         keywords: ["MOOC", "assessment", "personalization"],
+        launchPath: "https://ldgit99.github.io/rss-agent/",
+        buttonText: "열기",
         metrics: [
             { label: "오늘 수집", value: "42편" },
             { label: "중복 제거", value: "11편" },
@@ -73,9 +75,9 @@ const agents = [
 ];
 
 const statusMap = {
-    online: { label: "Online", className: "ok" },
+    online:   { label: "Online",   className: "ok" },
     degraded: { label: "Degraded", className: "warn" },
-    offline: { label: "Offline", className: "down" }
+    offline:  { label: "Offline",  className: "down" }
 };
 
 const monitorState = {
@@ -84,22 +86,21 @@ const monitorState = {
     syncStatus: "대기"
 };
 
-function formatDateTime(input) {
-    if (!input) {
-        return "-";
-    }
+// DOM 참조 (DOMContentLoaded 후 설정)
+let refreshBtn;
+let lastUpdatedEl;
 
+/* ── 유틸 ── */
+function formatDateTime(input) {
+    if (!input) return "-";
     const date = new Date(input);
-    if (Number.isNaN(date.getTime())) {
-        return "-";
-    }
+    if (Number.isNaN(date.getTime())) return "-";
 
     const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const hh = String(date.getHours()).padStart(2, "0");
-    const mi = String(date.getMinutes()).padStart(2, "0");
-
+    const mm   = String(date.getMonth() + 1).padStart(2, "0");
+    const dd   = String(date.getDate()).padStart(2, "0");
+    const hh   = String(date.getHours()).padStart(2, "0");
+    const mi   = String(date.getMinutes()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
 }
 
@@ -107,6 +108,7 @@ function findAgent(id) {
     return agents.find((agent) => agent.id === id);
 }
 
+/* ── 에이전트 열기 ── */
 function openAgent(agentId) {
     if (agentId === "monitor") {
         runMonitoringCycle();
@@ -114,18 +116,12 @@ function openAgent(agentId) {
     }
 
     const agent = findAgent(agentId);
-    if (!agent) {
-        return;
-    }
+    if (!agent || !agent.launchPath) return;
 
-    if (agent.launchPath) {
-        window.location.href = agent.launchPath;
-        return;
-    }
-
-    alert(`${agentId} 에이전트를 엽니다.`);
+    window.open(agent.launchPath, "_blank", "noopener,noreferrer");
 }
 
+/* ── 메트릭 셀 생성 ── */
 function createMetric(labelText, valueText) {
     const wrap = document.createElement("div");
     wrap.className = "metric";
@@ -142,15 +138,60 @@ function createMetric(labelText, valueText) {
     return wrap;
 }
 
+/* ── 스켈레톤 카드 렌더링 ── */
+function renderSkeleton() {
+    const dashboard = document.querySelector("#dashboard");
+    dashboard.innerHTML = "";
+
+    for (let i = 0; i < agents.length; i++) {
+        const card = document.createElement("div");
+        card.className = "skeleton-card";
+        card.style.animationDelay = `${i * 80}ms`;
+
+        card.innerHTML = `
+            <div class="skeleton-head">
+                <div style="display:flex;align-items:center;gap:0.55rem;flex:1;min-width:0;">
+                    <div class="skeleton-line" style="width:32px;height:32px;border-radius:10px;flex-shrink:0;"></div>
+                    <div class="skeleton-line" style="height:18px;width:55%;border-radius:8px;"></div>
+                </div>
+                <div class="skeleton-line" style="width:60px;height:22px;border-radius:999px;flex-shrink:0;"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                <div class="skeleton-line" style="height:13px;border-radius:5px;"></div>
+                <div class="skeleton-line" style="height:13px;width:75%;border-radius:5px;"></div>
+            </div>
+            <div class="skeleton-meta">
+                <div class="skeleton-line" style="height:26px;width:38%;border-radius:999px;"></div>
+                <div class="skeleton-line" style="height:26px;width:38%;border-radius:999px;"></div>
+            </div>
+            <div class="skeleton-meta">
+                <div class="skeleton-line" style="height:22px;width:22%;border-radius:999px;"></div>
+                <div class="skeleton-line" style="height:22px;width:22%;border-radius:999px;"></div>
+                <div class="skeleton-line" style="height:22px;width:22%;border-radius:999px;"></div>
+            </div>
+            <div class="skeleton-metrics">
+                <div class="skeleton-line" style="height:54px;border-radius:10px;"></div>
+                <div class="skeleton-line" style="height:54px;border-radius:10px;"></div>
+                <div class="skeleton-line" style="height:54px;border-radius:10px;"></div>
+                <div class="skeleton-line" style="height:54px;border-radius:10px;"></div>
+            </div>
+        `;
+
+        dashboard.appendChild(card);
+    }
+}
+
+/* ── 에이전트 카드 렌더링 ── */
 function addAgentCard(agent, index) {
     const dashboard = document.querySelector("#dashboard");
     const card = document.createElement("section");
+
     card.className = "agent-card";
-    if (agent.highlight) {
-        card.classList.add("agent-card--research");
-    }
+    if (agent.highlight) card.classList.add("agent-card--research");
+    card.classList.add(`agent-card--${agent.status}`);
     card.style.animationDelay = `${index * 80}ms`;
 
+    // 헤더
     const head = document.createElement("div");
     head.className = "agent-card__head";
 
@@ -163,7 +204,6 @@ function addAgentCard(agent, index) {
 
     const title = document.createElement("h2");
     title.textContent = agent.name;
-
     titleWrap.append(icon, title);
 
     const badge = document.createElement("span");
@@ -173,9 +213,11 @@ function addAgentCard(agent, index) {
 
     head.append(titleWrap, badge);
 
+    // 설명
     const desc = document.createElement("p");
     desc.textContent = agent.description;
 
+    // 메타 칩
     const meta = document.createElement("div");
     meta.className = "agent-meta";
     [
@@ -188,6 +230,7 @@ function addAgentCard(agent, index) {
         meta.appendChild(chip);
     });
 
+    // 키워드
     const keywordRow = document.createElement("div");
     keywordRow.className = "keyword-row";
     (agent.keywords || []).forEach((keywordText) => {
@@ -197,68 +240,86 @@ function addAgentCard(agent, index) {
         keywordRow.appendChild(keyword);
     });
 
+    // 메트릭
     const metrics = document.createElement("div");
     metrics.className = "metrics";
     (agent.metrics || []).forEach((metric) => {
         metrics.append(createMetric(metric.label, metric.value));
     });
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = agent.buttonText || "열기";
-    button.addEventListener("click", () => openAgent(agent.id));
+    card.append(head, desc, meta, keywordRow, metrics);
 
-    card.append(head, desc, meta, keywordRow, metrics, button);
+    // 버튼 — launchPath 있거나 monitor인 경우만 표시
+    if (agent.launchPath || agent.id === "monitor") {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = agent.buttonText || "열기";
+        button.addEventListener("click", () => openAgent(agent.id));
+        card.append(button);
+    }
+
     dashboard.appendChild(card);
 }
 
+/* ── Summary pills ── */
 function renderSummary() {
     const summary = document.querySelector("#summary");
     summary.innerHTML = "";
 
-    const onlineCount = agents.filter((agent) => agent.status === "online").length;
-    const degradedCount = agents.filter((agent) => agent.status === "degraded").length;
-    const offlineCount = agents.filter((agent) => agent.status === "offline").length;
+    const onlineCount  = agents.filter((a) => a.status === "online").length;
+    const degradedCount = agents.filter((a) => a.status === "degraded").length;
+    const offlineCount = agents.filter((a) => a.status === "offline").length;
 
     const items = [
-        `총 ${agents.length}개 에이전트`,
-        `Online ${onlineCount}`,
-        `Degraded ${degradedCount}`,
-        `Offline ${offlineCount}`
+        { text: `총 ${agents.length}개 에이전트`, cls: "" },
+        { text: `Online ${onlineCount}`,   cls: onlineCount  > 0 ? "pill--ok"   : "" },
+        { text: `Degraded ${degradedCount}`, cls: degradedCount > 0 ? "pill--warn" : "" },
+        { text: `Offline ${offlineCount}`, cls: offlineCount > 0 ? "pill--down" : "" }
     ];
 
-    items.forEach((text) => {
+    items.forEach(({ text, cls }) => {
         const pill = document.createElement("span");
-        pill.className = "pill";
+        pill.className = `pill${cls ? ` ${cls}` : ""}`;
         pill.textContent = text;
         summary.appendChild(pill);
     });
 }
 
+/* ── 대시보드 렌더링 ── */
 function renderDashboard() {
     const dashboard = document.querySelector("#dashboard");
     dashboard.innerHTML = "";
-
     agents.forEach((agent, index) => addAgentCard(agent, index));
     renderSummary();
 }
 
+/* ── 마지막 갱신 시각 업데이트 ── */
+function updateLastUpdated() {
+    if (!lastUpdatedEl) return;
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2, "0");
+    const mi  = String(now.getMinutes()).padStart(2, "0");
+    lastUpdatedEl.textContent = `${hh}:${mi} 갱신`;
+}
+
+/* ── 새로고침 버튼 스피너 ── */
+function setRefreshing(spinning) {
+    if (!refreshBtn) return;
+    refreshBtn.disabled = spinning;
+    refreshBtn.classList.toggle("spinning", spinning);
+}
+
+/* ── 모니터링 데이터 처리 ── */
 function getDelayMinutes(updatedAt) {
     const target = new Date(updatedAt);
-    if (Number.isNaN(target.getTime())) {
-        return null;
-    }
-
+    if (Number.isNaN(target.getTime())) return null;
     return Math.max(0, Math.floor((Date.now() - target.getTime()) / 60000));
 }
 
 function applyResearchSnapshot(snapshot) {
-    const researchAgent = findAgent("summarizer");
+    const researchAgent   = findAgent("summarizer");
     const monitoringAgent = findAgent("monitor");
-
-    if (!researchAgent || !monitoringAgent) {
-        return;
-    }
+    if (!researchAgent || !monitoringAgent) return;
 
     const delayMinutes = getDelayMinutes(snapshot.updatedAt);
     let monitorStatus = "online";
@@ -269,71 +330,66 @@ function applyResearchSnapshot(snapshot) {
         delayText = "알 수 없음";
     } else {
         delayText = `${delayMinutes}분`;
-        if (delayMinutes > 30) {
-            monitorStatus = "offline";
-        } else if (delayMinutes > 10) {
-            monitorStatus = "degraded";
-        }
+        if (delayMinutes > 30)      monitorStatus = "offline";
+        else if (delayMinutes > 10) monitorStatus = "degraded";
     }
 
-    const lastRunText = formatDateTime(snapshot.lastRunAt);
-    const keywordText = snapshot.recentKeyword || "-";
+    const lastRunText   = formatDateTime(snapshot.lastRunAt);
+    const keywordText   = snapshot.recentKeyword || "-";
     const todayAnalyzed = Number.isFinite(snapshot.todayAnalyzed) ? `${snapshot.todayAnalyzed}편` : "-";
-    const dailyReports = Number.isFinite(snapshot.dailyReports) ? `${snapshot.dailyReports}건` : "-";
-    const syncText = snapshot.syncTarget ? `${snapshot.syncTarget} (${snapshot.syncStatus || "상태 미확인"})` : "-";
+    const dailyReports  = Number.isFinite(snapshot.dailyReports)  ? `${snapshot.dailyReports}건`  : "-";
+    const syncText      = snapshot.syncTarget
+        ? `${snapshot.syncTarget} (${snapshot.syncStatus || "상태 미확인"})`
+        : "-";
 
-    researchAgent.lastRunDate = lastRunText;
-    researchAgent.recentKeyword = keywordText;
-    researchAgent.keywords = Array.isArray(snapshot.keywords) && snapshot.keywords.length > 0
+    researchAgent.lastRunDate    = lastRunText;
+    researchAgent.recentKeyword  = keywordText;
+    researchAgent.keywords       = Array.isArray(snapshot.keywords) && snapshot.keywords.length > 0
         ? snapshot.keywords
         : researchAgent.keywords;
-    researchAgent.status = monitorStatus === "offline" ? "degraded" : "online";
+    researchAgent.status  = monitorStatus === "offline" ? "degraded" : "online";
     researchAgent.metrics = [
-        { label: "최근 실행", value: lastRunText },
-        { label: "오늘 분석", value: todayAnalyzed },
+        { label: "최근 실행",   value: lastRunText },
+        { label: "오늘 분석",   value: todayAnalyzed },
         { label: "일일 보고서", value: dailyReports },
-        { label: "동기화", value: syncText }
+        { label: "동기화",      value: syncText }
     ];
 
     monitorState.lastCheckedAt = formatDateTime(snapshot.updatedAt);
-    monitorState.delayText = delayText;
-    monitorState.syncStatus = snapshot.syncStatus || "상태 미확인";
+    monitorState.delayText     = delayText;
+    monitorState.syncStatus    = snapshot.syncStatus || "상태 미확인";
 
-    monitoringAgent.status = monitorStatus;
-    monitoringAgent.lastRunDate = monitorState.lastCheckedAt;
+    monitoringAgent.status        = monitorStatus;
+    monitoringAgent.lastRunDate   = monitorState.lastCheckedAt;
     monitoringAgent.recentKeyword = keywordText;
     monitoringAgent.metrics = [
-        { label: "최근 점검", value: monitorState.lastCheckedAt },
+        { label: "최근 점검",   value: monitorState.lastCheckedAt },
         { label: "데이터 지연", value: monitorState.delayText },
-        { label: "점검 항목", value: "5개" },
+        { label: "점검 항목",   value: "5개" },
         { label: "동기화 상태", value: monitorState.syncStatus }
     ];
 }
 
 function applyMonitoringFailure() {
     const monitoringAgent = findAgent("monitor");
-    if (!monitoringAgent) {
-        return;
-    }
+    if (!monitoringAgent) return;
 
-    monitoringAgent.status = "offline";
-    monitoringAgent.lastRunDate = formatDateTime(new Date().toISOString());
+    monitoringAgent.status        = "offline";
+    monitoringAgent.lastRunDate   = formatDateTime(new Date().toISOString());
     monitoringAgent.recentKeyword = "데이터 수집 실패";
     monitoringAgent.metrics = [
-        { label: "최근 점검", value: monitoringAgent.lastRunDate },
+        { label: "최근 점검",   value: monitoringAgent.lastRunDate },
         { label: "데이터 지연", value: "수집 실패" },
-        { label: "점검 항목", value: "5개" },
+        { label: "점검 항목",   value: "5개" },
         { label: "동기화 상태", value: "확인 불가" }
     ];
 }
 
+/* ── 모니터링 사이클 ── */
 async function runMonitoringCycle() {
     try {
         const response = await fetch(`${MONITOR_SOURCE_URL}?t=${Date.now()}`, { cache: "no-store" });
-        if (!response.ok) {
-            throw new Error("monitor source unavailable");
-        }
-
+        if (!response.ok) throw new Error("monitor source unavailable");
         const snapshot = await response.json();
         applyResearchSnapshot(snapshot);
     } catch (_error) {
@@ -341,8 +397,23 @@ async function runMonitoringCycle() {
     }
 
     renderDashboard();
+    updateLastUpdated();
 }
 
-renderDashboard();
-runMonitoringCycle();
-setInterval(runMonitoringCycle, MONITOR_INTERVAL_MS);
+/* ── 초기화 ── */
+document.addEventListener("DOMContentLoaded", () => {
+    refreshBtn    = document.getElementById("refresh-btn");
+    lastUpdatedEl = document.getElementById("last-updated");
+
+    // 전역 새로고침 버튼
+    refreshBtn.addEventListener("click", async () => {
+        setRefreshing(true);
+        await runMonitoringCycle();
+        setRefreshing(false);
+    });
+
+    // 스켈레톤 먼저 표시 → 데이터 로드 후 실제 카드로 교체
+    renderSkeleton();
+    runMonitoringCycle();
+    setInterval(runMonitoringCycle, MONITOR_INTERVAL_MS);
+});
