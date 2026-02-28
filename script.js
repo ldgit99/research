@@ -48,6 +48,7 @@ const agents = [
         lastRunDate: "-",
         recentKeyword: "-",
         keywords: ["IRB", "quality-score", "HWPX"],
+        metaLabels: ["최근 실행 일시", "연구 주제"],
         launchPath: "https://ldgit99.github.io/irb-agent/",
         buttonText: "열기",
         metrics: [
@@ -222,9 +223,10 @@ function addAgentCard(agent, index) {
     // 메타 칩
     const meta = document.createElement("div");
     meta.className = "agent-meta";
+    const metaLabels = agent.metaLabels || ["최근 실행", "최근 검색"];
     [
-        `최근 실행: ${agent.lastRunDate || "-"}`,
-        `최근 검색: ${agent.recentKeyword || "-"}`
+        `${metaLabels[0]}: ${agent.lastRunDate || "-"}`,
+        `${metaLabels[1]}: ${agent.recentKeyword || "-"}`
     ].forEach((text) => {
         const chip = document.createElement("span");
         chip.className = "meta-chip";
