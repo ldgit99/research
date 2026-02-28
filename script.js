@@ -406,9 +406,12 @@ function applyIrbSnapshot(historyArray) {
     const runNumber     = latest.run_number != null ? `#${latest.run_number}` : "-";
     const result        = (latest.files?.hwpx && Number.isFinite(qualityTotal)) ? "성공" : "실패";
 
+    const words         = topic.split(/\s+/);
+    const topicShort    = words.length > 5 ? words.slice(0, 5).join(" ") + "…" : topic;
+
     irbAgent.status        = "online";
     irbAgent.lastRunDate   = lastRunText;
-    irbAgent.recentKeyword = topic;
+    irbAgent.recentKeyword = topicShort;
     irbAgent.metrics = [
         { label: "최근 실행",   value: runNumber },
         { label: "산출 형식",   value: "HWPX·MD·JSON" },
