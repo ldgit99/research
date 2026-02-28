@@ -448,6 +448,10 @@ body {
     margin: 0;
     font-size: 0.93rem;
     color: var(--muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .agent-meta {
@@ -505,6 +509,9 @@ body {
     margin-top: 0.3rem;
     font-weight: 700;
     font-size: 1.05rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ── 카드 버튼 ── */
